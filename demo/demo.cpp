@@ -1,4 +1,5 @@
 #include <iostream>
+#include <format>
 
 #include "libsched/scheduler.h"
 
@@ -18,8 +19,8 @@ int main() {
 
   scheduler.execute_all();
 
-  std::cout << "x1 = " << scheduler.get_result<int>(id5) << std::endl;
-  std::cout << "x2 = " << scheduler.get_result<int>(id6) << std::endl;
+  std::cout << "x1 = " << scheduler.get_result<float>(id5) << std::endl;
+  std::cout << "x2 = " << scheduler.get_result<float>(id6) << std::endl;
 
   return 0;
 }

@@ -1,6 +1,7 @@
-#include "libsched/scheduler/scheduler.h"
-#include <gtest/gtest.h>
 #include <format>
+#include <gtest/gtest.h>
+
+#include "libsched/scheduler/scheduler.h"
 
 using namespace sched;
 
@@ -9,17 +10,17 @@ TEST(libsched, basics) {
 
   auto f0 = [](int a, int b){return a + b;};
   auto f1 = [](int a, float b){
-	return static_cast<float>(a) + b;
+		return static_cast<float>(a) + b;
   };
   auto f2 = [](const std::string& a, float b){
-	return a + " " + std::format("{:.1f}", b);
+		return a + " " + std::format("{:.1f}", b);
   };
 
   int a = 10;
 
   auto t0 = scheduler.add(f0, a, 11);
   auto t1 = scheduler.add(f1, scheduler.get_future_result<int>(t0), 0.5);
-  auto t2 = scheduler.add(f2, "abc", scheduler.get_result<float>(t1));
+  auto t2 = scheduler.add(f2, std::string("abc"), scheduler.get_result<float>(t1));
 
   ASSERT_EQ(scheduler.get_result<std::string>(t2), "abc 21.5");
 }
@@ -30,8 +31,8 @@ TEST(libsched, result_caching) {
   size_t counter = 0;
 
   auto f0 = [&counter](int a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
 
   auto t0 = scheduler.add(f0, 5, 10);
@@ -45,15 +46,15 @@ TEST(libsched, multiple_arguments) {
   Scheduler scheduler;
 
   auto f0 = [](int a, short b, std::string c, std::string d){
-	return std::to_string(a) + std::to_string(b) + c + d;
+		return std::to_string(a) + std::to_string(b) + c + d;
   };
   auto f1 = [](bool a, bool b, bool c, bool d, bool e, const std::string& f){
-	return f + " " + std::to_string(a + b + c + d + e);
+		return f + " " + std::to_string(a + b + c + d + e);
   };
 
   std::string c = "a";
 
-  auto t0 = scheduler.add(f0, 100, 400, c, "b");
+  auto t0 = scheduler.add(f0, 100, 400, c, std::string("b"));
   auto t0_future_result = scheduler.get_future_result<std::string>(t0);
 
   auto t1 = scheduler.add(f1, true, false, false, true, true, t0_future_result);
@@ -67,16 +68,16 @@ TEST(libsched, laziness) {
   size_t counter = 0;
 
   auto f0 = [&counter](int a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
   auto f1 = [&counter](int a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
   auto f2 = [&counter](int a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
 
   int n = 2;
@@ -100,16 +101,16 @@ TEST(libsched, execute_all) {
   size_t counter = 0;
 
   auto f0 = [&counter](int a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
   auto f1 = [&counter](int a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
   auto f2 = [&counter](int a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
 
   int n = 2;
@@ -131,16 +132,16 @@ TEST(libsched, task_order_independence) {
   size_t counter = 0;
 
   auto f0 = [&counter](int a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
   auto f1 = [&counter](int& a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
   auto f2 = [&counter](int a, int b){
-	++counter;
-	return a + b;
+		++counter;
+		return a + b;
   };
 
   int n = -1000;
@@ -173,17 +174,65 @@ TEST(libsched, func_pointers) {
   ASSERT_EQ(scheduler.get_result<int>(t2), 200);
 }
 
-//TEST(libsched, void_func) {
-//  Scheduler scheduler;
-//
-//  size_t counter = 0;
-//
-//  auto f0 = [&counter](){
-//	counter = 3107;
-//  };
-//
-//  auto t0 = scheduler.add(f0);
-//
-//  scheduler.get_result<void>(t0);
-//  ASSERT_EQ(counter, 3107);
-//}
+TEST(libsched, moveonly_lambda_and_args) {
+	Scheduler scheduler;
+
+	std::unique_ptr<int> u1 = std::make_unique<int>(10);
+	std::unique_ptr<int> u2 = std::make_unique<int>(28);
+
+	size_t counter = 0;
+
+	auto l = [&counter, u1 = std::move(u1)](std::unique_ptr<int>&& u2){
+		++counter;
+		return *u2 - *u1;
+	};
+
+	static_assert(!std::is_copy_constructible_v<decltype(l)>);
+
+	auto id = scheduler.add(std::move(l), std::move(u2));
+
+	ASSERT_EQ(counter, 0);
+	ASSERT_FALSE(u1);
+	ASSERT_FALSE(u2);
+
+	ASSERT_EQ(scheduler.get_result<int>(id), 18);
+}
+
+class Res {
+public:
+	Res() = default;
+	explicit Res(bool* i) : i_(i) {};
+
+	~Res() {
+		*i_ = true;
+	}
+
+private:
+	bool* i_;
+};
+
+TEST(libsched, cached_result_destruction) {
+	Scheduler scheduler;
+
+	bool i = false;
+	size_t counter = 0;
+
+	auto l = [&i, &counter](int a){
+		++counter;
+		return Res(&i);
+	};
+
+	auto id = scheduler.add(l, 10);
+
+	ASSERT_EQ(counter, 0);
+	ASSERT_FALSE(i);
+
+	scheduler.get_result<Res>(id);
+	scheduler.get_result<Res>(id);
+
+	ASSERT_EQ(counter, 1);
+
+	scheduler.remove(id);
+
+	ASSERT_TRUE(i);
+}
