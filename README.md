@@ -28,7 +28,7 @@ std::cout << "x1 = " << scheduler.get_result<float>(id5) << std::endl;
 std::cout << "x2 = " << scheduler.get_result<float>(id6) << std::endl;
 ```
 
-### Публичный интерфейс `TTaskScheduler`
+### Публичный интерфейс `Scheduler`
 
 - `add` - добавляет задачу в планировщик. Возвращает идентификатор задачи.
 - `get_future_result<T>` - возвращает объект, через который иная задача может запросить результат выполнения данной.
@@ -41,3 +41,7 @@ std::cout << "x2 = " << scheduler.get_result<float>(id6) << std::endl;
 - Задачи должны быть [Callable objects](https://en.cppreference.com/w/cpp/named_req/Callable) (возможно, move-only).
 - Возвращаемое значение [CopyConstructible](https://en.cppreference.com/w/cpp/named_req/CopyConstructible).
 - Аргументы могут быть move-only.
+
+### Тестирование
+
+Код покрыт unit-тестами при помощи [gtest](https://github.com/google/googletest).
