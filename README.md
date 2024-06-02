@@ -48,7 +48,7 @@ TaskId add(Fn&& fn, Args&&... args);
 
 ### Возвращаемое значение
 
-Идентификатор задачи типа `TaskId`.
+Идентификатор задачи типа `TaskId`.   
 
 ### `get_future_result()`
 
@@ -68,7 +68,7 @@ FutureResult<ReturnType> get_future_result(TaskId id);
 
 ### Возвращаемое значение
 
-Объект типа `FutureResult<ReturnType>`.
+Объект типа `FutureResult<ReturnType>`.   
 
 ### `get_result()`
 
@@ -87,7 +87,7 @@ ReturnType& get_result(TaskId id);
 
 ### Возвращаемое значение
 
-Ссылка на результат выполнения задачи.
+Ссылка на результат выполнения задачи.   
 
 ### `execute_all()`
 
@@ -95,7 +95,7 @@ ReturnType& get_result(TaskId id);
 void execute_all();
 ```
 
-Выполняет все запланированные задачи.
+Выполняет все запланированные задачи.   
 
 ### `remove()`
 
@@ -103,7 +103,7 @@ void execute_all();
 void remove(TaskId id);
 ```
 
-Удаляет задачу из планировщика.
+Удаляет задачу из планировщика.   
 
 ### Параметры
 
